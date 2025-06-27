@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-This diagram closely matches the AWS reference style, with a single VPC rectangle, subnets inside, and EC2 instances inside subnets.
+This diagram closely matches the AWS reference style, with a single VPC rectangle, subnets inside, and EC2 instances inside subnets. It also includes CloudWatch, SNS, and IAM for monitoring, notifications, and access control.
 
 ```mermaid
 flowchart TB
@@ -54,7 +54,30 @@ flowchart TB
                 ASG -.-> EC2C2
             end
         end
+        %% CloudWatch, SNS, IAM (outside VPC)
+        CloudWatch["CloudWatch<br/>Monitoring & Logs"]
+        SNS["SNS<br/>Notifications"]
+        IAM["IAM<br/>Instance Role"]
     end
+
+    %% EC2 to CloudWatch
+    EC2A1 -- "Metrics & Logs" --> CloudWatch
+    EC2A2 -- "Metrics & Logs" --> CloudWatch
+    EC2B1 -- "Metrics & Logs" --> CloudWatch
+    EC2B2 -- "Metrics & Logs" --> CloudWatch
+    EC2C1 -- "Metrics & Logs" --> CloudWatch
+    EC2C2 -- "Metrics & Logs" --> CloudWatch
+
+    %% CloudWatch to SNS
+    CloudWatch -- "Alarms" --> SNS
+
+    %% EC2 to IAM
+    EC2A1 -- "Role" --> IAM
+    EC2A2 -- "Role" --> IAM
+    EC2B1 -- "Role" --> IAM
+    EC2B2 -- "Role" --> IAM
+    EC2C1 -- "Role" --> IAM
+    EC2C2 -- "Role" --> IAM
 
     %% Security Group (as a label)
     classDef sg fill:#fff3e0,stroke:#ff9800,stroke-width:2px;
@@ -69,6 +92,9 @@ flowchart TB
 - The Auto Scaling Group covers all EC2 instances across subnets.
 - Security groups are shown as a style overlay on EC2 instances.
 - Users access the application via the ALB.
+- EC2 instances send metrics and logs to CloudWatch.
+- CloudWatch sends alarms to SNS for notifications.
+- EC2 instances use IAM roles for secure AWS access.
 
 ## Component Details
 
