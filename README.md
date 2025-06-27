@@ -211,7 +211,7 @@ Key variables you can customize in `variables.tf`:
 | `asg_min_size` | Minimum ASG size | `2` |
 | `asg_max_size` | Maximum ASG size | `4` |
 | `asg_desired_capacity` | Desired ASG capacity | `2` |
-| `alert_email` | Email for notifications | `admin@example.com` |
+| `alert_email` | Email for notifications | `ms2036@fayoum.edu.eg` |
 
 ### Scaling Configuration
 - **CPU Threshold**: 80% for scale up, 20% for scale down
