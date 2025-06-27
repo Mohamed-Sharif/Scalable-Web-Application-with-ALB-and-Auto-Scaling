@@ -2,119 +2,73 @@
 
 ## Architecture Overview
 
-This diagram illustrates the complete AWS infrastructure for the scalable web application with ALB and Auto Scaling.
+This diagram closely matches the AWS reference style, with a single VPC rectangle, subnets inside, and EC2 instances inside subnets.
 
 ```mermaid
-graph TB
-    %% Internet
-    Internet[🌐 Internet]
-    
-    %% VPC Container
-    subgraph VPC["🏢 VPC: 10.0.0.0/16"]
-        %% Public Subnets
-        subgraph PublicSubnets["🌍 Public Subnets"]
-            PublicSubnet1["📡 Public Subnet 1<br/>10.0.1.0/24<br/>us-east-1a"]
-            PublicSubnet2["📡 Public Subnet 2<br/>10.0.2.0/24<br/>us-east-1b"]
+flowchart TB
+    %% Users
+    Users([fa:fa-users Users])
+    Users -- "HTTP/S requests" --> ALB
+
+    %% AWS Cloud
+    subgraph AWS["Amazon Web Services Cloud"]
+        subgraph Region["Region"]
+            subgraph VPC["VPC"]
+                ALB["Application Load Balancer"]
+                ALB -.-> ASG["Auto Scaling Group"]
+
+                %% Subnets and AZs
+                subgraph AZ1["Availability Zone 1"]
+                    subgraph Subnet1["Subnet"]
+                        EC2A1["EC2 Instance"]
+                        EC2A2["EC2 Instance"]
+                    end
+                end
+                subgraph AZ2["Availability Zone 2"]
+                    subgraph Subnet2["Subnet"]
+                        EC2B1["EC2 Instance"]
+                        EC2B2["EC2 Instance"]
+                    end
+                end
+                subgraph AZ3["Availability Zone 3"]
+                    subgraph Subnet3["Subnet"]
+                        EC2C1["EC2 Instance"]
+                        EC2C2["EC2 Instance"]
+                    end
+                end
+
+                %% ALB to EC2s
+                ALB --> EC2A1
+                ALB --> EC2A2
+                ALB --> EC2B1
+                ALB --> EC2B2
+                ALB --> EC2C1
+                ALB --> EC2C2
+
+                %% ASG covers all EC2s
+                ASG -.-> EC2A1
+                ASG -.-> EC2A2
+                ASG -.-> EC2B1
+                ASG -.-> EC2B2
+                ASG -.-> EC2C1
+                ASG -.-> EC2C2
+            end
         end
-        
-        %% Private Subnets
-        subgraph PrivateSubnets["🔒 Private Subnets"]
-            PrivateSubnet1["🔐 Private Subnet 1<br/>10.0.11.0/24<br/>us-east-1a"]
-            PrivateSubnet2["🔐 Private Subnet 2<br/>10.0.12.0/24<br/>us-east-1b"]
-        end
-        
-        %% Network Components
-        IGW["🌐 Internet Gateway"]
-        NAT["🌐 NAT Gateway"]
-        EIP["💳 Elastic IP"]
-        
-        %% Security Groups
-        ALB_SG["🛡️ ALB Security Group<br/>Ports: 80, 443"]
-        EC2_SG["🛡️ EC2 Security Group<br/>Ports: 5000, 22"]
-        
-        %% Application Load Balancer
-        ALB["🔗 Application Load Balancer<br/>aws-scalable-webapp-production-alb"]
-        
-        %% Auto Scaling Group
-        subgraph ASG["🔄 Auto Scaling Group<br/>aws-scalable-webapp-production-asg"]
-            EC2_1["🖥️ EC2 Instance 1<br/>t3.micro"]
-            EC2_2["🖥️ EC2 Instance 2<br/>t3.micro"]
-            EC2_N["🖥️ EC2 Instance N<br/>t3.micro"]
-        end
-        
-        %% Application
-        FlaskApp["🐍 Flask Web Application<br/>Port 5000"]
     end
-    
-    %% AWS Services (Outside VPC)
-    CloudWatch["📊 CloudWatch<br/>Monitoring & Logging"]
-    SNS["📧 SNS Topic<br/>Alerts & Notifications"]
-    IAM["🔑 IAM Role<br/>EC2 Permissions"]
-    
-    %% Connections - Internet to VPC
-    Internet --> IGW
-    IGW --> PublicSubnet1
-    IGW --> PublicSubnet2
-    
-    %% Connections - ALB in Public Subnets
-    PublicSubnet1 --> ALB
-    PublicSubnet2 --> ALB
-    ALB --> ALB_SG
-    
-    %% Connections - EC2 Instances in Private Subnets
-    PrivateSubnet1 --> EC2_1
-    PrivateSubnet2 --> EC2_2
-    PrivateSubnet1 --> EC2_N
-    EC2_1 --> EC2_SG
-    EC2_2 --> EC2_SG
-    EC2_N --> EC2_SG
-    
-    %% Application Load Balancer to EC2 Instances
-    ALB --> EC2_1
-    ALB --> EC2_2
-    ALB --> EC2_N
-    
-    %% EC2 Instances to Application
-    EC2_1 --> FlaskApp
-    EC2_2 --> FlaskApp
-    EC2_N --> FlaskApp
-    
-    %% Network Gateway Connections
-    PrivateSubnet1 --> NAT
-    PrivateSubnet2 --> NAT
-    NAT --> EIP
-    EIP --> IGW
-    
-    %% AWS Services Connections
-    EC2_1 --> IAM
-    EC2_2 --> IAM
-    EC2_N --> IAM
-    
-    EC2_1 --> CloudWatch
-    EC2_2 --> CloudWatch
-    EC2_N --> CloudWatch
-    
-    CloudWatch --> SNS
-    
-    %% Styling
-    classDef vpc fill:#E8F4FD,stroke:#0066CC,stroke-width:3px
-    classDef publicSubnet fill:#B8E6B8,stroke:#006600,stroke-width:2px
-    classDef privateSubnet fill:#FFE6CC,stroke:#CC6600,stroke-width:2px
-    classDef awsService fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef network fill:#3B48CC,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef security fill:#D13212,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef compute fill:#009900,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef monitoring fill:#FF6B6B,stroke:#232F3E,stroke-width:2px,color:#fff
-    
-    class VPC vpc
-    class PublicSubnets,PublicSubnet1,PublicSubnet2 publicSubnet
-    class PrivateSubnets,PrivateSubnet1,PrivateSubnet2 privateSubnet
-    class ALB,ASG,CloudWatch,SNS,IAM awsService
-    class IGW,NAT,EIP network
-    class ALB_SG,EC2_SG security
-    class EC2_1,EC2_2,EC2_N,FlaskApp compute
-    class CloudWatch,SNS monitoring
+
+    %% Security Group (as a label)
+    classDef sg fill:#fff3e0,stroke:#ff9800,stroke-width:2px;
+    class EC2A1,EC2A2,EC2B1,EC2B2,EC2C1,EC2C2 sg;
 ```
+
+---
+
+- The VPC contains all subnets and resources.
+- Each subnet is inside an Availability Zone.
+- The Application Load Balancer is inside the VPC and connects to all EC2 instances.
+- The Auto Scaling Group covers all EC2 instances across subnets.
+- Security groups are shown as a style overlay on EC2 instances.
+- Users access the application via the ALB.
 
 ## Component Details
 
